@@ -1,6 +1,7 @@
 package goenvconfig
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -9,7 +10,9 @@ import (
 
 const tag = "env"
 
-func Load[T any](config *T) {
+// Load populates provided config struct with environment variables
+// using `env:"ENV_VAR"` tag and converting them to specified types
+func Load[T any](config *T) error {
 	val := reflect.ValueOf(*config)
 
 	for i := 0; i < val.NumField(); i++ {
@@ -19,8 +22,10 @@ func Load[T any](config *T) {
 
 		v := os.Getenv(envVar)
 		if v == "" {
-			panic(fmt.Sprintf("Config error: var %s not found", envVar))
+			return errors.New(fmt.Sprintf("Config error: var %s not found", envVar))
 		}
+
+		fmt.Println("Type:", propType.String())
 
 		switch propType.String() {
 		case "string":
@@ -29,7 +34,7 @@ func Load[T any](config *T) {
 		case "int":
 			parsed, err := strconv.Atoi(v)
 			if err != nil {
-				panic(fmt.Sprintf(`Config error: var "%s" failed to convert to int`, envVar))
+				return errors.New(fmt.Sprintf("Config error: var %s failed to convert to int", envVar))
 			}
 
 			setProperty(config, propName, parsed)
@@ -38,10 +43,10 @@ func Load[T any](config *T) {
 			panic(fmt.Sprintf("Config error: type %s not supported", propType))
 		}
 	}
+
+	return nil
 }
 
-func setProperty[T any](i *T, propName string, propValue any) *T {
+func setProperty[T any](i *T, propName string, propValue any) {
 	reflect.ValueOf(i).Elem().FieldByName(propName).Set(reflect.ValueOf(propValue))
-
-	return i
 }
