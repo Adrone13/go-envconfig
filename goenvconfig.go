@@ -25,8 +25,6 @@ func Load[T any](config *T) error {
 			return errors.New(fmt.Sprintf("Config error: var %s not found", envVar))
 		}
 
-		fmt.Println("Type:", propType.String())
-
 		switch propType.String() {
 		case "string":
 			setProperty(config, propName, v)
